@@ -234,6 +234,7 @@ C:/QtOsprayViewer/QtOsprayViewer/QtOsprayViewer_autogen/include_Release/EWIEGA46
   C:/Qt/6.10.2/msvc2022_64/include/QtWidgets/qtwidgetsexports.h \
   C:/Qt/6.10.2/msvc2022_64/include/QtWidgets/qtwidgetsglobal.h \
   C:/Qt/6.10.2/msvc2022_64/include/QtWidgets/qwidget.h \
+  C:/QtOsprayViewer/QtOsprayViewer/ospraybackend.h \
   C:/ospray/build/install/ospray/include/ospray/OSPEnums.h \
   C:/ospray/build/install/ospray/include/ospray/ospray.h \
   C:/ospray/build/install/ospray/include/ospray/ospray_cpp.h \
