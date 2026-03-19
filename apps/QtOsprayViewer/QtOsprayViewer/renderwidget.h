@@ -1,43 +1,46 @@
 #pragma once
 
-#include <QWidget>
 #include <QImage>
 #include <QPoint>
+#include <QString>
+#include <QWidget>
 
 #include <ospray/ospray_cpp/ext/rkcommon.h>
 #include "ospraybackend.h"
 
-class RenderWidget : public QWidget {
-	Q_OBJECT
-public:
-	explicit RenderWidget(QWidget* parent = nullptr);
+class RenderWidget : public QWidget
+{
+  Q_OBJECT
+ public:
+  explicit RenderWidget(QWidget *parent = nullptr);
 
-protected:
-	void paintEvent(QPaintEvent*) override;
-	void resizeEvent(QResizeEvent*) override;
-	void mousePressEvent(QMouseEvent* e) override;
-	void mouseMoveEvent(QMouseEvent* e) override;
-	void wheelEvent(QWheelEvent* e) override;
+  bool loadModel(const QString &path);
+  void resetView();
 
-private:
-	void syncCameraToBackend();
-	void renderOnce();
+ protected:
+  void paintEvent(QPaintEvent *) override;
+  void resizeEvent(QResizeEvent *) override;
+  void mousePressEvent(QMouseEvent *e) override;
+  void mouseMoveEvent(QMouseEvent *e) override;
+  void wheelEvent(QWheelEvent *e) override;
 
-	OsprayBackend backend_;
-	QImage image_;
-	QPoint lastMouse_;
+ private:
+  void syncCameraToBackend();
+  void renderOnce();
 
-	// Camera controller (look-at)
-	rkcommon::math::vec3f center_{ 0.f, 0.f, 1.5f };
-	rkcommon::math::vec3f up_{ 0.f, 1.f, 0.f };
+  OsprayBackend backend_;
+  QImage image_;
+  QPoint lastMouse_;
 
-	float yaw_ = 0.0f;     // radians
-	float pitch_ = 0.0f;   // radians
-	float dist_ = 4.0f;    // distance to center
-	float fovy_ = 60.0f;   // degrees
+  rkcommon::math::vec3f center_{0.f, 0.f, 1.5f};
+  rkcommon::math::vec3f up_{0.f, 1.f, 0.f};
 
-	// interaction scaling
-	float orbitSpeed_ = 0.01f;
-	float panSpeed_ = 0.0025f;
-	float zoomFactor_ = 0.9f; // per wheel step
+  float yaw_ = 0.3f;
+  float pitch_ = 0.2f;
+  float dist_ = 4.0f;
+  float fovy_ = 60.0f;
+
+  float orbitSpeed_ = 0.01f;
+  float panSpeed_ = 0.0025f;
+  float zoomFactor_ = 0.9f;
 };

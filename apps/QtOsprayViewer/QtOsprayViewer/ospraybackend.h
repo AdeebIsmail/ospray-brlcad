@@ -1,49 +1,54 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include <ospray/ospray_cpp.h>
 #include <ospray/ospray_cpp/ext/rkcommon.h>
 
-class OsprayBackend {
-public:
-    OsprayBackend() = default;
+class OsprayBackend
+{
+ public:
+  OsprayBackend() = default;
 
-    // Call once after ospInit() in main()
-    void init();
+  void init();
+  void resize(int w, int h);
 
-    // Resize framebuffer + update camera aspect
-    void resize(int w, int h);
+  void setCamera(const rkcommon::math::vec3f &eye,
+      const rkcommon::math::vec3f &center,
+      const rkcommon::math::vec3f &up,
+      float fovyDeg);
 
-    // Set camera look-at
-    void setCamera(const rkcommon::math::vec3f& eye,
-        const rkcommon::math::vec3f& center,
-        const rkcommon::math::vec3f& up,
-        float fovyDeg);
+  void resetAccumulation();
+  const uint32_t *render();
 
-    // Clear accumulation (call when camera changes)
-    void resetAccumulation();
+  bool loadObj(const std::string &path);
+  void loadTestMesh();
 
-    // Render one frame and return pointer to RGBA8 pixels
-    // Valid until next render/resize.
-    const uint32_t* render();
+  rkcommon::math::vec3f getBoundsCenter() const;
+  float getBoundsRadius() const;
 
-    int width() const { return fbW_; }
-    int height() const { return fbH_; }
+  int width() const
+  {
+    return fbW_;
+  }
+  int height() const
+  {
+    return fbH_;
+  }
 
-private:
-    void buildTestMeshScene();
+ private:
+  int fbW_ = 1;
+  int fbH_ = 1;
 
-    int fbW_ = 1;
-    int fbH_ = 1;
+  rkcommon::math::vec3f boundsMin_{0.f, 0.f, 0.f};
+  rkcommon::math::vec3f boundsMax_{0.f, 0.f, 0.f};
 
-    // OSPRay objects
-    ospray::cpp::Renderer renderer_;
-    ospray::cpp::Camera camera_;
-    ospray::cpp::World world_;
-    ospray::cpp::FrameBuffer fb_;
+  ospray::cpp::Renderer renderer_;
+  ospray::cpp::Camera camera_;
+  ospray::cpp::World world_;
+  ospray::cpp::FrameBuffer fb_;
 
-    // CPU-side pixel buffer (RGBA8)
-    std::vector<uint32_t> pixels_;
+  std::vector<uint32_t> pixels_;
 };

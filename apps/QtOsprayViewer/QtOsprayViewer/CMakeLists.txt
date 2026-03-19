@@ -36,7 +36,10 @@ qt_add_executable(QtOsprayViewer
 
 
 # rkcommon headers live here in your install
-target_include_directories(QtOsprayViewer PRIVATE "C:/ospray/build/install/rkcommon/include")
+target_include_directories(QtOsprayViewer PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "C:/ospray/build/install/rkcommon/include"
+)
 
 target_link_libraries(QtOsprayViewer PRIVATE Qt6::Widgets ospray::ospray)
 
