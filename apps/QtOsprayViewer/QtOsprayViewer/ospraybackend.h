@@ -29,6 +29,9 @@ class OsprayBackend
   rkcommon::math::vec3f getBoundsCenter() const;
   float getBoundsRadius() const;
 
+  void setRenderer(const std::string &type);
+  void setAoSamples(int samples);
+
   int width() const
   {
     return fbW_;
@@ -37,6 +40,8 @@ class OsprayBackend
   {
     return fbH_;
   }
+    
+  int& getAoSamples();
 
  private:
   int fbW_ = 1;
@@ -51,4 +56,6 @@ class OsprayBackend
   ospray::cpp::FrameBuffer fb_;
 
   std::vector<uint32_t> pixels_;
+
+  
 };

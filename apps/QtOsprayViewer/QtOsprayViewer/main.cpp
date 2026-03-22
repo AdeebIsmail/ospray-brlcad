@@ -6,6 +6,8 @@
 
 int main(int argc, char *argv[])
 {
+  MessageBoxA(nullptr, "main start", "debug", MB_OK);
+
   int ac = argc;
   const char **av = const_cast<const char **>(argv);
 
@@ -15,15 +17,28 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  ospLoadModule("cpu");
+  MessageBoxA(nullptr, "ospInit ok", "debug", MB_OK);
 
+  ospLoadModule("cpu");
+  MessageBoxA(nullptr, "cpu module loaded", "debug", MB_OK);
+
+ 
   int rc = 0;
   {
     QApplication a(argc, argv);
+    MessageBoxA(nullptr, "QApplication created", "debug", MB_OK);
+
     MainWindow w;
+    MessageBoxA(nullptr, "MainWindow created", "debug", MB_OK);
+
     w.show();
+    MessageBoxA(nullptr, "MainWindow shown", "debug", MB_OK);
+
     rc = a.exec();
-  }
+  }    
+      
+
+  MessageBoxA(nullptr, "event loop ended", "debug", MB_OK);
 
   ospShutdown();
   return rc;

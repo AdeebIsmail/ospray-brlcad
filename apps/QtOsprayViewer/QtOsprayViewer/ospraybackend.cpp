@@ -11,12 +11,15 @@ using rkcommon::math::vec3f;
 using rkcommon::math::vec3ui;
 using rkcommon::math::vec4f;
 
+int aoSamples_ = 1;
+
 void OsprayBackend::init()
 {
-  renderer_ = ospray::cpp::Renderer("scivis");
+  renderer_ = ospray::cpp::Renderer("ao");
   renderer_.setParam("aoSamples", 0);
   renderer_.setParam("backgroundColor", 1.0f);
   renderer_.commit();
+
 
   camera_ = ospray::cpp::Camera("perspective");
   camera_.setParam("fovy", 60.f);
@@ -40,8 +43,7 @@ void OsprayBackend::resize(int w, int h)
   pixels_.assign(size_t(fbW_) * size_t(fbH_), 0u);
 }
 
-void OsprayBackend::setCamera(
-    const vec3f &eye, const vec3f &center, const vec3f &up, float fovyDeg)
+void OsprayBackend::setCamera(const vec3f &eye, const vec3f &center, const vec3f &up, float fovyDeg)
 {
   camera_.setParam("position", eye);
   camera_.setParam("direction", center - eye);
@@ -130,6 +132,7 @@ void OsprayBackend::loadTestMesh()
 
   ospray::cpp::Light light("ambient");
   light.commit();
+
   world_.setParam("light", ospray::cpp::CopiedData(light));
   world_.commit();
 
@@ -228,4 +231,30 @@ bool OsprayBackend::loadObj(const std::string &path)
 
   resetAccumulation();
   return true;
+}
+
+void OsprayBackend::setRenderer(const std::string &type)
+{
+  renderer_ = ospray::cpp::Renderer(type);
+
+  // re-apply basic params
+  renderer_.setParam("aoSamples", aoSamples_); // if you have this
+  renderer_.commit();
+
+  resetAccumulation();
+}
+
+void OsprayBackend::setAoSamples(int samples)
+{
+  aoSamples_ = samples;
+
+  renderer_.setParam("aoSamples", aoSamples_);
+  renderer_.commit();
+
+  resetAccumulation();
+}
+
+int& OsprayBackend::getAoSamples()
+{
+  return aoSamples_;
 }

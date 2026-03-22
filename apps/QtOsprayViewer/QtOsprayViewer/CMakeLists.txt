@@ -10,54 +10,51 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_PREFIX_PATH "C:/Qt/6.10.2/msvc2022_64")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets)
 
-# Point to your OSPRay superbuild install prefix
 set(OSPRAY_PREFIX "C:/ospray/build/install/ospray" CACHE PATH "OSPRay prefix")
 list(APPEND CMAKE_PREFIX_PATH "${OSPRAY_PREFIX}")
 
 find_package(ospray REQUIRED CONFIG)
 
-# rkcommon is shipped with OSPRay; in many installs it's available as a CMake target
-#find_package(rkcommon REQUIRED CONFIG)
-
-
-#target_link_libraries(QtOsprayViewer PRIVATE rkcommon::rkcommon)
-
 qt_add_executable(QtOsprayViewer
     main.cpp
     mainwindow.cpp
     mainwindow.h
-    renderwidget.h
     renderwidget.cpp
+    renderwidget.h
     ospraybackend.cpp
     ospraybackend.h
 )
 
+target_sources(QtOsprayViewer PRIVATE
+    imgui/imgui.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_tables.cpp
+    imgui/imgui_widgets.cpp
+    imgui/backends/imgui_impl_opengl3.cpp
+)
 
-# rkcommon headers live here in your install
 target_include_directories(QtOsprayViewer PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "C:/imgui"
+    "C:/imgui/backends"
     "C:/ospray/build/install/rkcommon/include"
 )
 
-target_link_libraries(QtOsprayViewer PRIVATE Qt6::Widgets ospray::ospray)
+target_link_libraries(QtOsprayViewer PRIVATE
+    Qt6::Widgets
+    Qt6::OpenGLWidgets
+    ospray::ospray
+    opengl32
+)
 
-# Copy runtime DLLs so the app runs from Qt Creator
 if (WIN32)
-  add_custom_command(TARGET QtOsprayViewer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-      "C:/Qt/6.10.2/msvc2022_64/bin"
-      "$<TARGET_FILE_DIR:QtOsprayViewer>"
-  )
   add_custom_command(TARGET QtOsprayViewer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
       "C:/ospray/build/install/ospray/bin"
       "$<TARGET_FILE_DIR:QtOsprayViewer>"
   )
-endif()
-
-if (WIN32)
   add_custom_command(TARGET QtOsprayViewer POST_BUILD
     COMMAND "C:/Qt/6.10.2/msvc2022_64/bin/windeployqt.exe"
             "$<TARGET_FILE:QtOsprayViewer>"

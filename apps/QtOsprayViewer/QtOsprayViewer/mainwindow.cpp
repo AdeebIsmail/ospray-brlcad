@@ -7,20 +7,22 @@
 #include <QMenuBar>
 #include <QMessageBox>
 
+#include <QLabel>
+
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
   renderWidget_ = new RenderWidget(this);
   setCentralWidget(renderWidget_);
-  resize(1100, 750);
+  resize(1200, 800);
+  setWindowTitle("Qt OSPRay Viewer");
 
   setupMenus();
-  setWindowTitle("QtOsprayViewer - MainWindow");
 }
 
 void MainWindow::setupMenus()
 {
   QMenu *fileMenu = menuBar()->addMenu("&File");
-  menuBar()->setVisible(true);
 
   QAction *openAction = new QAction("&Open Model...", this);
   fileMenu->addAction(openAction);
@@ -32,6 +34,18 @@ void MainWindow::setupMenus()
 
   QAction *exitAction = new QAction("E&xit", this);
   fileMenu->addAction(exitAction);
+
+  QMenu *viewMenu = menuBar()->addMenu("&View");
+
+  QAction *orbitModeAction = new QAction("Orbit Mode", this);
+  orbitModeAction->setCheckable(true);
+  orbitModeAction->setChecked(true);
+
+  QAction *flyModeAction = new QAction("Fly Mode", this);
+  flyModeAction->setCheckable(true);
+
+  viewMenu->addAction(orbitModeAction);
+  viewMenu->addAction(flyModeAction);
 
   connect(openAction, &QAction::triggered, this, [this]() {
     QString path = QFileDialog::getOpenFileName(this,
@@ -69,4 +83,22 @@ void MainWindow::setupMenus()
   });
 
   connect(exitAction, &QAction::triggered, this, [this]() { close(); });
+
+  connect(orbitModeAction,
+      &QAction::triggered,
+      this,
+      [this, orbitModeAction, flyModeAction]() {
+        orbitModeAction->setChecked(true);
+        flyModeAction->setChecked(false);
+        renderWidget_->setInputMode(RenderWidget::InputMode::Orbit);
+      });
+
+  connect(flyModeAction,
+      &QAction::triggered,
+      this,
+      [this, orbitModeAction, flyModeAction]() {
+        orbitModeAction->setChecked(false);
+        flyModeAction->setChecked(true);
+        renderWidget_->setInputMode(RenderWidget::InputMode::Fly);
+      });
 }
