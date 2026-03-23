@@ -37,7 +37,6 @@ list(APPEND CMAKE_PREFIX_PATH "${OSPRAY_PREFIX}")
 set(Qt6_DIR "${QT6_CMAKE_DIR}" CACHE PATH "Qt6 config directory")
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
-
 find_package(ospray REQUIRED CONFIG)
 
 # rkcommon is shipped with OSPRay; in many installs it's available as a CMake target
@@ -54,6 +53,7 @@ qt_add_executable(QtOsprayViewer
     renderwidget.cpp
     ospraybackend.cpp
     ospraybackend.h
+)
 )
 
 
