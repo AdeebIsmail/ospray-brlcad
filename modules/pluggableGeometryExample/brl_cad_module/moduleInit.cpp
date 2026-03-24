@@ -3,7 +3,7 @@
 
 /*! \file ospray/moduleInit \brief Defines the module initialization callback */
 
-// #include "geometry/BilinearPatches.h"
+#include <iostream>
 #include "geometry/brlcad.h"
 #include "ospray/version.h"
 
@@ -11,12 +11,7 @@
   'ospray' namespace. */
 namespace ospray {
 
-/*! though not required, it is good practice to put any module into
-  its own namespace (isnide of ospray:: ). Unlike for the naming of
-  library and init function, the naming for this namespace doesn't
-  particularlly matter. E.g., 'bilinearPatch', 'module_blp',
-  'bilinar_patch' etc would all work equally well. */
-namespace brl_cad {
+namespace brlcad {
 
 /*! the actual module initialization function. This function gets
     called exactly once, when the module gets first loaded through
@@ -40,25 +35,23 @@ namespace brl_cad {
 */
 
 extern "C" OSPError OSPRAY_DLLEXPORT ospray_module_init_brl_cad(
-    int16_t versionMajor, int16_t versionMinor, int16_t /*versionPatch*/) {
+    int16_t versionMajor, int16_t versionMinor, int16_t /*versionPatch*/)
+{
   auto status = moduleVersionCheck(versionMajor, versionMinor);
 
   if (status == OSP_NO_ERROR) {
-    /*! maybe one of the most important parts of this example: this
-        function 'registers' the BilinearPatches class under the ospray
-        geometry type name of 'bilinear_patches'.
+    /*! Register the BRLCAD geometry class under the ospray
+        geometry type name of 'brlcad'. This name is used to create
+        geometries:
 
-        It is _this_ name that one can now (assuming the module has
-        been loaded with ospLoadModule(), of course) create geometries
-        with; i.e.,
-
-        OSPGeometry geom = ospNewGeometry("bilinear_patches") ;
+        OSPGeometry geom = ospNewGeometry("brlcad");
     */
-    Geometry::registerType<BRLCAD>("brl_cad");
+    Geometry::registerType<BRLCAD>("brlcad");
+    std::cout << "Initializing BRL-CAD module for OSPRay" << std::endl;
   }
 
   return status;
 }
 
-} // namespace brl_cad
+} // namespace brlcad
 } // namespace ospray

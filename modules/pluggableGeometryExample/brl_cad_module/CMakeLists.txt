@@ -28,6 +28,48 @@
 #
 add_library(ospray_module_brl_cad SHARED)
 
+set(BRLCAD_ROOT "" CACHE PATH "Path to BRL-CAD installation prefix")
+
+find_path(BRLCAD_INCLUDE_DIR
+  NAMES brlcad/common.h
+  HINTS ${BRLCAD_ROOT} $ENV{BRLCAD_ROOT}
+  PATH_SUFFIXES include
+)
+
+find_library(BRLCAD_LIBBU
+  NAMES bu libbu
+  HINTS ${BRLCAD_ROOT} $ENV{BRLCAD_ROOT}
+  PATH_SUFFIXES lib lib64
+)
+
+find_library(BRLCAD_LIBBN
+  NAMES bn libbn
+  HINTS ${BRLCAD_ROOT} $ENV{BRLCAD_ROOT}
+  PATH_SUFFIXES lib lib64
+)
+
+find_library(BRLCAD_LIBRT
+  NAMES rt librt
+  HINTS ${BRLCAD_ROOT} $ENV{BRLCAD_ROOT}
+  PATH_SUFFIXES lib lib64
+)
+
+if (NOT BRLCAD_INCLUDE_DIR OR NOT BRLCAD_LIBBU OR NOT BRLCAD_LIBBN OR NOT BRLCAD_LIBRT)
+  message(FATAL_ERROR
+    "BRL-CAD development files not found. Set BRLCAD_ROOT to a BRL-CAD install prefix "
+    "containing include/brlcad/common.h and libs libbu, libbn, librt.")
+endif()
+
+set(BRLCAD_INCLUDE_DIRS ${BRLCAD_INCLUDE_DIR})
+if (EXISTS "${BRLCAD_INCLUDE_DIR}/brlcad/common.h")
+  list(APPEND BRLCAD_INCLUDE_DIRS "${BRLCAD_INCLUDE_DIR}/brlcad")
+endif()
+if (EXISTS "${BRLCAD_INCLUDE_DIR}/OpenNURBS/opennurbs.h")
+  list(APPEND BRLCAD_INCLUDE_DIRS "${BRLCAD_INCLUDE_DIR}/OpenNURBS")
+endif()
+
+target_include_directories(ospray_module_brl_cad PRIVATE ${BRLCAD_INCLUDE_DIRS})
+
 include_directories_ispc(${RKCOMMON_INCLUDE_DIRS})
 
 # Required definitions for ISPC hybrid code for CPU
@@ -37,19 +79,20 @@ add_definitions_ispc(
   -DSYCL_EXTERNAL=
 )
 
-ispc_target_add_sources(ospray_module_brl_cad 
-  # the cpp file that contains all the plugin code - parsing
-  # parameters in ospCommit(), creating and registering the object,
-  # building accel structures, etc
+set(BRLCAD_MODULE_SOURCES
+  # The C++ implementation of the BRL-CAD geometry plugin.
   geometry/brlcad.cpp
-
-  # the ispc file that contains the plugins for all vector code - ie,
-  # for ray-primitive intersection and 'postIntersect' (reporting info
-  # on a previously computed ray-prim intersection)
-  geometry/brlcad.ispc
-
-  # and finally, the module init code (not doing much, but must be there)
+  # Module entry point required by ospLoadModule("brl_cad").
   moduleInit.cpp
 )
 
-target_link_libraries(ospray_module_brl_cad PUBLIC ospray_module_cpu)
+if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/geometry/brlcad.ispc")
+  list(APPEND BRLCAD_MODULE_SOURCES geometry/brlcad.ispc)
+endif()
+
+ispc_target_add_sources(ospray_module_brl_cad ${BRLCAD_MODULE_SOURCES})
+
+target_link_libraries(ospray_module_brl_cad
+  PUBLIC ospray_module_cpu
+  PRIVATE ${BRLCAD_LIBRT} ${BRLCAD_LIBBU} ${BRLCAD_LIBBN}
+)
