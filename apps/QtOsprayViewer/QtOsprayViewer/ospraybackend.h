@@ -29,8 +29,15 @@ class OsprayBackend
   rkcommon::math::vec3f getBoundsCenter() const;
   float getBoundsRadius() const;
 
+  rkcommon::math::vec3f getBoundsMin() const;
+  rkcommon::math::vec3f getBoundsMax() const;
+  float getBoundsMaxExtent() const;
+
   void setRenderer(const std::string &type);
   void setAoSamples(int samples);
+
+  float lastFrameTimeMs() const;
+  float renderFPS() const;
 
   int width() const
   {
@@ -56,6 +63,9 @@ class OsprayBackend
   ospray::cpp::FrameBuffer fb_;
 
   std::vector<uint32_t> pixels_;
+
+  float lastFrameTimeMs_ = 0.0f;
+  int triangleCount_ = 0; // if you’re using it
 
   
 };

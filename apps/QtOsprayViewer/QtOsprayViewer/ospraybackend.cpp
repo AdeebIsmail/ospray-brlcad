@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
-
+#include "logger.h"
+#include <QString>
+#include <chrono>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
@@ -15,17 +17,22 @@ int aoSamples_ = 1;
 
 void OsprayBackend::init()
 {
+  LOG_INFO("Initializing OSPRay backend");
   renderer_ = ospray::cpp::Renderer("ao");
   renderer_.setParam("aoSamples", 0);
   renderer_.setParam("backgroundColor", 1.0f);
   renderer_.commit();
-
+  LOG_INFO("Renderer created: ao");
 
   camera_ = ospray::cpp::Camera("perspective");
   camera_.setParam("fovy", 60.f);
   camera_.commit();
+  LOG_INFO("Renderer created: scivis");
 
   loadTestMesh();
+  LOG_INFO("Perspective camera created");
+
+  LOG_INFO("Default test mesh loaded");
 }
 
 void OsprayBackend::resize(int w, int h)
@@ -41,6 +48,7 @@ void OsprayBackend::resize(int w, int h)
   fb_.clear();
 
   pixels_.assign(size_t(fbW_) * size_t(fbH_), 0u);
+  LOG_INFO(QString("Framebuffer resized to %1 x %2").arg(fbW_).arg(fbH_));
 }
 
 void OsprayBackend::setCamera(const vec3f &eye, const vec3f &center, const vec3f &up, float fovyDeg)
@@ -60,11 +68,20 @@ void OsprayBackend::resetAccumulation()
 
 const uint32_t *OsprayBackend::render()
 {
+  auto start = std::chrono::high_resolution_clock::now();
+
   fb_.renderFrame(renderer_, camera_, world_);
 
+  auto end = std::chrono::high_resolution_clock::now();
+
+  lastFrameTimeMs_ =
+      std::chrono::duration<float, std::milli>(end - start).count();
+
   void *mapped = fb_.map(OSP_FB_COLOR);
-  std::memcpy(pixels_.data(), mapped, pixels_.size() * sizeof(uint32_t));
+  std::memcpy(pixels_.data(), mapped, fbW_ * fbH_ * 4);
   fb_.unmap(mapped);
+
+  LOG_INFO(QString("Framebuffer resized to %1 x %2").arg(fbW_).arg(fbH_));
 
   return pixels_.data();
 }
@@ -141,16 +158,22 @@ void OsprayBackend::loadTestMesh()
 
 bool OsprayBackend::loadObj(const std::string &path)
 {
+  LOG_INFO(QString("Render completed in %1 ms").arg(lastFrameTimeMs_));
+
   tinyobj::ObjReader reader;
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
 
-  if (!reader.ParseFromFile(path, config))
+  if (!reader.ParseFromFile(path, config)) {
+    LOG_ERROR("OBJ parsing failed");
     return false;
+  }
 
-  if (!reader.Error().empty())
-    return false;
-
+  if (!reader.Error().empty()) {
+    LOG_ERROR("OBJ parsing failed");
+      return false;
+  }
+  const auto &materials = reader.GetMaterials();
   const auto &attrib = reader.GetAttrib();
   const auto &shapes = reader.GetShapes();
 
@@ -165,34 +188,60 @@ bool OsprayBackend::loadObj(const std::string &path)
     colors.emplace_back(0.8f, 0.8f, 0.8f, 1.0f);
   }
 
+  size_t indexOffset = 0;
+
   for (const auto &shape : shapes) {
-    size_t indexOffset = 0;
-    for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); ++f) {
+    indexOffset = 0;
+
+    for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
       int fv = shape.mesh.num_face_vertices[f];
+
+      // Only handle triangles
       if (fv != 3) {
         indexOffset += fv;
         continue;
       }
 
-      const auto &i0 = shape.mesh.indices[indexOffset + 0];
-      const auto &i1 = shape.mesh.indices[indexOffset + 1];
-      const auto &i2 = shape.mesh.indices[indexOffset + 2];
+      // --- Get material color ---
+      vec4f faceColor(0.8f, 0.8f, 0.8f, 1.0f); // default
 
-      if (i0.vertex_index < 0 || i1.vertex_index < 0 || i2.vertex_index < 0) {
-        indexOffset += fv;
-        continue;
+      int matId = -1;
+      if (f < shape.mesh.material_ids.size()) {
+        matId = shape.mesh.material_ids[f];
       }
 
-      indices.emplace_back(static_cast<unsigned>(i0.vertex_index),
-          static_cast<unsigned>(i1.vertex_index),
-          static_cast<unsigned>(i2.vertex_index));
+      if (matId >= 0 && matId < materials.size()) {
+        const auto &mat = materials[matId];
+        faceColor = vec4f(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2], 1.0f);
+      }
+
+      // --- Build triangle ---
+      unsigned int base = vertices.size();
+
+      for (int v = 0; v < 3; v++) {
+        const auto &idx = shape.mesh.indices[indexOffset + v];
+
+        float vx = attrib.vertices[3 * idx.vertex_index + 0];
+        float vy = attrib.vertices[3 * idx.vertex_index + 1];
+        float vz = attrib.vertices[3 * idx.vertex_index + 2];
+
+        vertices.emplace_back(vx, vy, vz);
+        colors.emplace_back(faceColor);
+      }
+
+      indices.emplace_back(base, base + 1, base + 2);
 
       indexOffset += fv;
     }
   }
 
-  if (vertices.empty() || indices.empty())
-    return false;
+  LOG_ERROR("OBJ parsing failed");
+
+  if (vertices.empty() || indices.empty()) {
+    LOG_ERROR("OBJ file produced empty geometry");
+  return false;
+  }
+    
 
   boundsMin_ = vertices[0];
   boundsMax_ = vertices[0];
@@ -242,6 +291,8 @@ void OsprayBackend::setRenderer(const std::string &type)
   renderer_.commit();
 
   resetAccumulation();
+
+  LOG_INFO(QString("Renderer switched to: %1").arg(QString::fromStdString(type)));
 }
 
 void OsprayBackend::setAoSamples(int samples)
@@ -252,9 +303,40 @@ void OsprayBackend::setAoSamples(int samples)
   renderer_.commit();
 
   resetAccumulation();
+  LOG_INFO(QString("AO samples set to: %1").arg(aoSamples_));
 }
 
 int& OsprayBackend::getAoSamples()
 {
   return aoSamples_;
+}
+
+float OsprayBackend::lastFrameTimeMs() const
+{
+  return lastFrameTimeMs_;
+}
+
+float OsprayBackend::renderFPS() const
+{
+  if (lastFrameTimeMs_ <= 0.0001f)
+    return 0.0f;
+  return 1000.0f / lastFrameTimeMs_;
+}
+
+rkcommon::math::vec3f OsprayBackend::getBoundsMin() const
+{
+  return boundsMin_;
+}
+
+rkcommon::math::vec3f OsprayBackend::getBoundsMax() const
+{
+  return boundsMax_;
+}
+
+float OsprayBackend::getBoundsMaxExtent() const
+{
+  float dx = boundsMax_.x - boundsMin_.x;
+  float dy = boundsMax_.y - boundsMin_.y;
+  float dz = boundsMax_.z - boundsMin_.z;
+  return std::max(dx, std::max(dy, dz));
 }

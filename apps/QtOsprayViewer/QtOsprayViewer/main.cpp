@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <QApplication>
-
+#include "logger.h"
 #include <ospray/ospray.h>
 #include "mainwindow.h"
 
@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
   const char **av = const_cast<const char **>(argv);
 
   OSPError err = ospInit(&ac, av);
+  LOG_INFO("OSPRay initialized successfully");
   if (err != OSP_NO_ERROR) {
     MessageBoxA(nullptr, "ospInit failed", "OSPRay", MB_OK | MB_ICONERROR);
     return 1;
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
   MessageBoxA(nullptr, "ospInit ok", "debug", MB_OK);
 
   ospLoadModule("cpu");
+  LOG_INFO("OSPRay initialized successfully");
   MessageBoxA(nullptr, "cpu module loaded", "debug", MB_OK);
 
  
@@ -30,9 +32,11 @@ int main(int argc, char *argv[])
 
     MainWindow w;
     MessageBoxA(nullptr, "MainWindow created", "debug", MB_OK);
+    LOG_INFO("MainWindow created");
 
     w.show();
     MessageBoxA(nullptr, "MainWindow shown", "debug", MB_OK);
+    LOG_INFO("MainWindow created");
 
     rc = a.exec();
   }    
@@ -41,5 +45,6 @@ int main(int argc, char *argv[])
   MessageBoxA(nullptr, "event loop ended", "debug", MB_OK);
 
   ospShutdown();
+  LOG_INFO("Shutting down OSPRay");
   return rc;
 }

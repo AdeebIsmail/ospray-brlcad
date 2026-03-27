@@ -48,6 +48,9 @@ class RenderWidget : public QOpenGLWidget, protected QOpenGLFunctions
   void syncCameraToBackend();
   void renderOnce();
 
+  void syncFlyFromOrbit();
+  void syncOrbitFromFly();
+
   static float clampf(float v, float lo, float hi);
   static rkcommon::math::vec3f normalizeVec(const rkcommon::math::vec3f &v);
   static rkcommon::math::vec3f crossVec(
